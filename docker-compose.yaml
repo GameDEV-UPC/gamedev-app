@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  frontend:
+    container_name: web
+    restart: always
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules     # Evita sobrescribir node_modules del contenedor
+    ports:
+      - "5173:5173"           # Puerto por defecto de Vite
+    command: sh -c "cd gamedev-web-frontend_ && npm install && npm run build && npm run dev -- --host"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
+
+  nginx:
+    container_name: nginx
+    restart: always
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/gamedev-web-frontend_/dist:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf 
+    depends_on:
+      - frontend
+
+  postgresql:
+    container_name: postgres
+    restart: always
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: gamedev
+      POSTGRES_PASSWORD: gamedev
+      POSTGRES_DB: gamedev_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  fastapi:
+    container_name: fastapi-api
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app  # Monta el código para desarrollo
+    restart: always
+    
+
+volumes:
+  pgdata:
