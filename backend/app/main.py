@@ -3,11 +3,20 @@ from pydantic import BaseModel
 from sqlmodel import Field, Session, SQLModel, create_engine, select, update
 from typing import Annotated
 import bcrypt
+from fastapi.middleware.cors import CORSMiddleware
 
 import time
-
-
 app = FastAPI()
+# Configuración CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Puedes poner solo tu dominio en lugar de '*'
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 class UserEmail(BaseModel):
     email: str
 class NFCUuid(BaseModel):
@@ -170,3 +179,24 @@ def hash_password(password: str) -> str:
 
 def check_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
+
+class Player(BaseModel):
+    nick: str
+    color: str
+
+players = []
+
+@app.post("/join")
+def join(player: Player):
+    players.append(player)
+    return {"message": "Jugador añadido"}
+
+@app.get("/players")
+def get_players():
+    return players
+@app.delete("/players")
+def delete_players():
+    players.clear()
+    return {"message": "Jugadores borrados"}
